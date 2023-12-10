@@ -41,7 +41,7 @@ class Seq2SeqModel(nn.Module):
         self.output_length = output_length
 
     def forward(self, X):
-        outputs = torch.zeros((X.size(0), )).to(self.device)
+        outputs = torch.zeros((X.size(0), self.output_length, X.size(2))).to(self.device)
         input = X[:, -1, :]
         _, h = self.encoder(X)
         for j in range(self.output_length):
