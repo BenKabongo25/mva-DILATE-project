@@ -11,7 +11,7 @@ import torch.nn as nn
 
 class Encoder(nn.Module):
 
-    def __init__(self, input_size, hidden_size, num_layers=1):
+    def __init__(self, input_size, hidden_size, num_layers):
         super().__init__()
         self.rnn = nn.GRU(input_size, hidden_size, num_layers=num_layers, batch_first=True)
 
@@ -22,11 +22,11 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self, n_dim, input_size, hidden_size, projection_size, num_layers=1):
+    def __init__(self, input_size, hidden_size, projection_size, num_layers):
         super().__init__()
         self.rnn = nn.GRU(input_size, hidden_size, num_layers=num_layers, batch_first=True)
         self.project_fc = nn.Linear(hidden_size, projection_size)
-        self.out_fc = nn.Linear(projection_size, n_dim)
+        self.out_fc = nn.Linear(projection_size, input_size)
         self.relu = nn.ReLU()
         
     def forward(self, input, h0):
@@ -37,18 +37,19 @@ class Decoder(nn.Module):
 
 class Seq2SeqModel(nn.Module):
 
-    def __init__(self, n_dim, output_length, input_size, hidden_size, projection_size, num_layers):
+    def __init__(self, output_length, input_size, hidden_size, projection_size, num_layers, device):
         super().__init__()
-        self.encoder = Encoder(input_size, hidden_size, num_layers)
-        self.decoder = Decoder(n_dim, input_size, hidden_size, projection_size, num_layers)
+        self.encoder = Encoder(input_size, hidden_size, num_layers).to(device)
+        self.decoder = Decoder(input_size, hidden_size, projection_size, num_layers).to(device)
         self.output_length = output_length
+        self.device = device
 
     def forward(self, X):
         outputs = torch.zeros((X.size(0), self.output_length, X.size(2))).to(self.device)
-        input = X[:, -1, :]
+        input = X[:, -1, :].unsqueeze(1)
         _, h = self.encoder(X)
         for j in range(self.output_length):
             output, h = self.decoder(input, h)
-            outputs[:, j] = output
+            outputs[:, j] = output.squeeze(1)
             input = output
         return outputs
