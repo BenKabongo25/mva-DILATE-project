@@ -10,36 +10,6 @@ import torch
 from torch.autograd import Function
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-class DilateLoss(nn.Module):
-
-    def __init__(self, alpha: float, gamma: float, device: torch.device):
-        super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.device = device
-
-    def compute_Delta_i(outputs_i, targets_i):
-        return 
-    
-
-    def forward(self, outputs, targets):
-        batch_size, length = outputs.size(0), outputs.size(1)
-
-        L_shape = 0
-        L_temporal = 0
-
-        Delta = torch.zeros((batch_size, length, length))
-        for i in range(batch_size):
-            Delta[i] = ((targets[i] ** 2).sum(1).view(-1, 1) + 
-                        (outputs[i] ** 2).sum(1).view(1, -1) -
-                        2.0 * torch.mm(targets[i], torch.transpose(outputs[i], 0, 1)))
-
-		# TODO:
-
-        L_dilate = self.alpha * L_shape + (1 - self.alpha) * L_temporal
-        return L_dilate, L_shape, L_temporal
     
 
 # Soft-DTW: a Differentiable Loss Function for Time-Series
@@ -106,3 +76,31 @@ class SoftDTWFunction(Function):
 			Ei = soft_DTW_backward(Delta[i].detach().cpu().numpy(), R[i].detach().cpu().numpy(), gamma)
 			E[i] = torch.FloatTensor(Ei).to(grad_output.device)
 		return grad_output * E, None
+
+
+class DilateLoss(nn.Module):
+
+	def __init__(self, alpha: float, gamma: float, device: torch.device):
+		super().__init__()
+		self.alpha = alpha
+		self.gamma = gamma
+		self.device = device
+		self.soft_DTW = SoftDTWFunction.apply
+
+	def forward(self, outputs, targets):
+		batch_size, length = outputs.size(0), outputs.size(1)
+		
+		L_shape = 0
+		L_temporal = 0
+
+		Delta = torch.zeros((batch_size, length, length))
+		for i in range(batch_size):
+			Delta[i] = ((targets[i] ** 2).sum(1).view(-1, 1) + 
+                        (outputs[i] ** 2).sum(1).view(1, -1) -
+                        2.0 * torch.mm(targets[i], torch.transpose(outputs[i], 0, 1)))
+		L_shape = self.soft_DTW(Delta, self.gamma)
+		
+		# TODO:
+
+		L_dilate = self.alpha * L_shape + (1 - self.alpha) * L_temporal
+		return L_dilate, L_shape, L_temporal
