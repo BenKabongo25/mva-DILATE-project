@@ -43,7 +43,6 @@ class DilateLoss(nn.Module):
 		return L_dilate, L_shape, L_temporal
 
 
-
 # Soft-DTW: a Differentiable Loss Function for Time-Series
 # http://proceedings.mlr.press/v70/cuturi17a/cuturi17a.pdf
 
@@ -110,8 +109,9 @@ class SoftDTWFunction(Function):
 			E[i] = torch.FloatTensor(Ei).to(grad_output.device)
 		return grad_output * E, None
 
+
 ## Path DTW
-## Code from : https://github.com/vincent-leguen/DILATE/blob/master/loss/path_soft_dtw.py
+## https://github.com/vincent-leguen/DILATE/blob/master/loss/path_soft_dtw.py
 
 @jit(nopython = True)
 def my_max(x, gamma):
