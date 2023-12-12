@@ -134,7 +134,7 @@ lr = 1e-3
 n_epochs = 200
 model = Seq2SeqModel(output_length=56, input_size=1, hidden_size=128, projection_size=16, num_layers=1, device=device)
 all_train_loss, mse_test_loss, dilate_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss = train(
-    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.5, gamma=0.01, train_loss="DILATE"
+    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.01, gamma=0.01, train_loss="DILATE"
     )
 
 # Create a directory 'plots' if it doesn't exist
@@ -164,7 +164,8 @@ plt.close()
 
 model.eval()
 input, target = ecg_test_dataset[3333]
-prediction  = model(input.unsqueeze(0)).squeeze()
+input = input.to(device)  # Move input to the same device as the model
+prediction = model(input.unsqueeze(0)).squeeze()
 input, target, prediction = input.numpy(), target.numpy(), prediction.detach().numpy()
 plt.figure(figsize=(5, 4))
 plt.plot(np.arange(0, len(input)), input, label="input")
