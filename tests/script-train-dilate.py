@@ -133,7 +133,7 @@ input, output = input.numpy(), output.numpy()
 lr = 1e-3
 n_epochs = 200
 model = Seq2SeqModel(output_length=56, input_size=1, hidden_size=128, projection_size=16, num_layers=1, device=device)
-all_train_loss, all_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss = train(
+all_train_loss, mse_test_loss, dilate_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss = train(
     model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.5, gamma=0.01, train_loss="DILATE"
     )
 
@@ -143,7 +143,7 @@ if not os.path.exists('plots'):
 
 plt.figure(figsize=(8, 5))
 plt.plot(all_train_loss, label="Train loss")
-plt.plot(all_test_loss, label="Test loss")
+plt.plot(dilate_test_loss, label="Test loss")
 plt.legend()
 plt.savefig('plots/train_test_dilate.png')  # Save figure
 plt.close()
@@ -171,4 +171,5 @@ plt.plot(np.arange(0, len(input)), input, label="input")
 plt.plot(np.arange(len(input), len(input) + len(target)), target, label="target")
 plt.plot(np.arange(len(input), len(input) + len(target)), prediction, label="prediction")
 plt.legend()
-plt.show()
+plt.savefig('plots/reconstruction_ecg_3333.png')  # Save figure
+plt.close()
