@@ -12,13 +12,16 @@ import torch
 from torch.autograd import Function
 import torch.nn as nn
 import torch.nn.functional as F
-    
+from numba import jit
+
+
 
 # Soft-DTW: a Differentiable Loss Function for Time-Series
 # http://proceedings.mlr.press/v70/cuturi17a/cuturi17a.pdf
 
 INF = 1e9
 
+@jit(nopython = True)
 def soft_DTW_forward(Delta, gamma):
 	def min_gamma(a):
 		if gamma == 0:
@@ -35,7 +38,7 @@ def soft_DTW_forward(Delta, gamma):
 			R[i, j] = Delta[i -1, j -1] + min_gamma(np.array([R[i - 1, j - 1], R[i - 1, j], R[i, j - 1]]))
 	return R
 
-
+@jit(nopython = True)
 def soft_DTW_backward(Delta, R, gamma):
 	N = len(Delta)
 	D = np.zeros((N + 2, N + 2))
@@ -83,26 +86,27 @@ class SoftDTWFunction(Function):
 ## Code from : https://github.com/vincent-leguen/DILATE/blob/master/loss/path_soft_dtw.py
 ## TODO : write ours
 
+@jit(nopython = True)
 def my_max(x, gamma):
     max_x = np.max(x)
     exp_x = np.exp((x - max_x) / gamma)
     Z = np.sum(exp_x)
     return gamma * np.log(Z) + max_x, exp_x / Z
 
-
+@jit(nopython = True)
 def my_min(x,gamma) :
     min_x, argmax_x = my_max(-x, gamma)
     return - min_x, argmax_x
 
-
+@jit(nopython = True)
 def my_max_hessian_product(p, z, gamma):
     return  ( p * z - p * np.sum(p * z) ) /gamma
 
-
+@jit(nopython = True)
 def my_min_hessian_product(p, z, gamma):
     return - my_max_hessian_product(p, z, gamma)
 
-
+@jit(nopython = True)
 def dtw_grad(theta, gamma):
     m = theta.shape[0]
     n = theta.shape[1]
@@ -134,7 +138,7 @@ def dtw_grad(theta, gamma):
     
     return V[m, n], E[1:m + 1, 1:n + 1], Q, E
 
-
+@jit(nopython = True)
 def dtw_hessian_prod(theta, Z, Q, E, gamma):
     m = Z.shape[0]
     n = Z.shape[1]

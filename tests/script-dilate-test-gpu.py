@@ -18,7 +18,7 @@ from dilate import DilateLoss
 plt.style.use("bmh")
 warnings.filterwarnings(action="ignore")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+print(device)
 
 
 def train(model, train_dataloader, test_dataloader, lr, n_epochs=1_000, alpha=0.01, gamma=0.01, train_loss="MSE"):
