@@ -15,6 +15,34 @@ import torch.nn.functional as F
 from numba import jit
 
 
+class DilateLoss(nn.Module):
+
+	def __init__(self, alpha: float, gamma: float, device: torch.device):
+		super().__init__()
+		self.alpha = alpha
+		self.gamma = gamma
+		self.device = device
+		self.soft_DTW = SoftDTWFunction.apply
+		self.path_DTW = PathDTWFunction.apply
+
+	def forward(self, targets, outputs):
+		batch_size, length = outputs.size(0), outputs.size(1)
+
+		Delta = torch.zeros((batch_size, length, length))
+		for i in range(batch_size):
+			Delta[i] = ((targets[i] ** 2).sum(1).view(-1, 1) + 
+                        (outputs[i] ** 2).sum(1).view(1, -1) -
+                        2.0 * torch.mm(targets[i], torch.transpose(outputs[i], 0, 1)))
+		L_shape = self.soft_DTW(Delta, self.gamma)
+
+		Omega = ((torch.range(0, length - 1).view(-1, 1) - (torch.range(0, length - 1))) ** 2) / (length ** 2)
+		A = self.path_DTW(Delta, self.gamma)
+		L_temporal = (A * Omega).sum()
+
+		L_dilate = self.alpha * L_shape + (1 - self.alpha) * L_temporal
+		return L_dilate, L_shape, L_temporal
+
+
 
 # Soft-DTW: a Differentiable Loss Function for Time-Series
 # http://proceedings.mlr.press/v70/cuturi17a/cuturi17a.pdf
@@ -82,9 +110,8 @@ class SoftDTWFunction(Function):
 			E[i] = torch.FloatTensor(Ei).to(grad_output.device)
 		return grad_output * E, None
 
-
+## Path DTW
 ## Code from : https://github.com/vincent-leguen/DILATE/blob/master/loss/path_soft_dtw.py
-## TODO : write ours
 
 @jit(nopython = True)
 def my_max(x, gamma):
@@ -207,36 +234,3 @@ class PathDTWFunction(Function):
             Hessian[k:k+1,:,:] = torch.FloatTensor(hess_k).to(device)
 
         return  Hessian, None
-
-
-## DILATE Loss
-
-
-class DilateLoss(nn.Module):
-
-	def __init__(self, alpha: float, gamma: float, device: torch.device):
-		super().__init__()
-		self.alpha = alpha
-		self.gamma = gamma
-		self.device = device
-		self.soft_DTW = SoftDTWFunction.apply
-		self.path_DTW = PathDTWFunction.apply
-
-	def forward(self, targets, outputs):
-		batch_size, length = outputs.size(0), outputs.size(1)
-
-		Delta = torch.zeros((batch_size, length, length))
-		for i in range(batch_size):
-			Delta[i] = ((targets[i] ** 2).sum(1).view(-1, 1) + 
-                        (outputs[i] ** 2).sum(1).view(1, -1) -
-                        2.0 * torch.mm(targets[i], torch.transpose(outputs[i], 0, 1)))
-		L_shape = self.soft_DTW(Delta, self.gamma)
-
-		Omega = ((torch.range(0, length - 1).view(-1, 1) - (torch.range(0, length - 1))) ** 2) / (length ** 2)
-
-		# TODO:
-		A = self.path_DTW(Delta, self.gamma)
-		L_temporal = (A * Omega).sum()
-
-		L_dilate = self.alpha * L_shape + (1 - self.alpha) * L_temporal
-		return L_dilate, L_shape, L_temporal
