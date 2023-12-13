@@ -162,15 +162,23 @@ plt.legend()
 plt.savefig('plots/test_dilate_mse.png')  # Save figure
 plt.close()
 
-model.eval()
-input, target = ecg_test_dataset[3333]
-input = input.to(device)  # Move input to the same device as the model
-prediction = model(input.unsqueeze(0)).squeeze()
-input, target, prediction = input.numpy(), target.numpy(), prediction.detach().numpy()
-plt.figure(figsize=(5, 4))
-plt.plot(np.arange(0, len(input)), input, label="input")
-plt.plot(np.arange(len(input), len(input) + len(target)), target, label="target")
-plt.plot(np.arange(len(input), len(input) + len(target)), prediction, label="prediction")
-plt.legend()
-plt.savefig('plots/reconstruction_ecg_3333.png')  # Save figure
-plt.close()
+
+try :
+    model.eval()
+    input, target = ecg_test_dataset[3333]
+    input = input.to(device)
+    prediction = model(input.unsqueeze(0)).squeeze()
+
+    # Move tensors to CPU before converting to NumPy
+    input, target, prediction = input.cpu().numpy(), target.numpy(), prediction.cpu().detach().numpy()
+
+    plt.figure(figsize=(5, 4))
+    plt.plot(np.arange(0, len(input)), input, label="input")
+    plt.plot(np.arange(len(input), len(input) + len(target)), target, label="target")
+    plt.plot(np.arange(len(input), len(input) + len(target)), prediction, label="prediction")
+    plt.legend()
+    plt.savefig('plots/reconstruction_ecg_3333.png')  # Save figure
+    plt.close()
+
+except :
+    print('error at the end')
