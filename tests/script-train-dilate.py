@@ -134,7 +134,7 @@ lr = 1e-3
 n_epochs = 200
 model = Seq2SeqModel(output_length=56, input_size=1, hidden_size=128, projection_size=16, num_layers=1, device=device)
 all_train_loss, mse_test_loss, dilate_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss = train(
-    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.01, gamma=0.01, train_loss="DILATE"
+    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.5, gamma=0.01, train_loss="DILATE"
     )
 
 # Create a directory 'plots' if it doesn't exist
@@ -152,14 +152,14 @@ plt.figure(figsize=(8, 5))
 plt.plot(shape_train_loss, label="Train shape loss")
 plt.plot(shape_test_loss, label="Test shape loss")
 plt.legend()
-plt.savefig('plots/test_dilate_mse.png')  # Save figure
+plt.savefig('plots/dilate_shape_loss.png')  # Save figure
 plt.close()
 
 plt.figure(figsize=(8, 5))
 plt.plot(temporal_train_loss, label="Train temporal loss")
 plt.plot(temporal_test_loss, label="Test temporal loss")
 plt.legend()
-plt.savefig('plots/test_dilate_mse.png')  # Save figure
+plt.savefig('plots/dilate_temporal_loss.png')  # Save figure
 plt.close()
 
 
