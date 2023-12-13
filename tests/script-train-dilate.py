@@ -130,11 +130,11 @@ ecg_test_dataloader = DataLoader(ecg_test_dataset, batch_size=batch_size, shuffl
 input, output = ecg_train_dataset[333]
 input, output = input.numpy(), output.numpy()
 
-lr = 1e-3
+lr = 1e-4
 n_epochs = 500
 model = Seq2SeqModel(output_length=56, input_size=1, hidden_size=128, projection_size=16, num_layers=1, device=device)
 all_train_loss, mse_test_loss, dilate_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss = train(
-    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.005, gamma=0.01, train_loss="DILATE"
+    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.5, gamma=0.01, train_loss="DILATE"
     )
 
 # Create a directory 'plots' if it doesn't exist
