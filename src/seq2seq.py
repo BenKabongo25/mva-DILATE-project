@@ -4,6 +4,8 @@
 # Ben Kabongo & Martin Brosset
 # M2 MVA
 
+# Seq2Seq Model
+
 
 import torch
 import torch.nn as nn
