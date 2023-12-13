@@ -35,7 +35,7 @@ class DilateLoss(nn.Module):
                         2.0 * torch.mm(targets[i], torch.transpose(outputs[i], 0, 1)))
 		L_shape = self.soft_DTW(Delta, self.gamma)
 
-		Omega = ((torch.range(0, length - 1).view(-1, 1) - (torch.range(0, length - 1))) ** 2) / (length ** 2)
+		Omega = ((torch.arange(0, length).view(-1, 1) - (torch.arange(0, length))) ** 2) / (length ** 2)
 		A = self.path_DTW(Delta, self.gamma)
 		L_temporal = (A * Omega).sum()
 
