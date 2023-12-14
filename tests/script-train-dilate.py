@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import sys
 import torch
 import torch.nn as nn
@@ -20,6 +21,10 @@ warnings.filterwarnings(action="ignore")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
+seed = 0
+random.seed(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
 
 def train(model, train_dataloader, test_dataloader, lr, n_epochs=1_000, alpha=0.01, gamma=0.01, train_loss="MSE"):
 
@@ -33,6 +38,8 @@ def train(model, train_dataloader, test_dataloader, lr, n_epochs=1_000, alpha=0.
     temporal_test_loss = []
 
     optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.7)
+
     mse_loss = torch.nn.MSELoss()
     dilate_loss = DilateLoss(alpha=alpha, gamma=gamma, device=device)
 
@@ -66,6 +73,7 @@ def train(model, train_dataloader, test_dataloader, lr, n_epochs=1_000, alpha=0.
             temporal_train_loss.append(epoch_temporal_train_loss)
 
         model.eval()
+        scheduler.step()
         epoch_mse_test_loss = 0
         epoch_dilate_test_loss = 0
         epoch_shape_test_loss = 0
@@ -98,6 +106,7 @@ def train(model, train_dataloader, test_dataloader, lr, n_epochs=1_000, alpha=0.
         description += f" dilate test = {epoch_dilate_test_loss:.2f} shape = {epoch_shape_test_loss:.2f} temp = {epoch_temporal_test_loss:.2f}"
 
         tqdm_bar.set_description(description)
+        print( ' Eval mse= ', epoch_mse_test_loss ,' dtw= ',epoch_shape_test_loss ,' tdi= ', epoch_shape_test_loss) 
 
     return all_train_loss, mse_test_loss, dilate_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss
 
@@ -127,15 +136,27 @@ ecg_test_dataset = ECG5000Dataset(ecg_test)
 ecg_train_dataloader = DataLoader(ecg_train_dataset, batch_size=batch_size, shuffle=True)
 ecg_test_dataloader = DataLoader(ecg_test_dataset, batch_size=batch_size, shuffle=False)
 
-input, output = ecg_train_dataset[333]
-input, output = input.numpy(), output.numpy()
 
-lr = 1e-4
-n_epochs = 500
+lr = 5e-3
+n_epochs = 300
+model = Seq2SeqModel(output_length=56, input_size=1, hidden_size=128, projection_size=16, num_layers=1, device=device)
+all_train_loss_, mse_test_loss_, dilate_test_loss_, shape_train_loss_, temporal_train_loss_, shape_test_loss_, temporal_test_loss_ = train(
+    model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.5, gamma=0.01, train_loss="MSE"
+    )
+
 model = Seq2SeqModel(output_length=56, input_size=1, hidden_size=128, projection_size=16, num_layers=1, device=device)
 all_train_loss, mse_test_loss, dilate_test_loss, shape_train_loss, temporal_train_loss, shape_test_loss, temporal_test_loss = train(
     model, ecg_train_dataloader, ecg_test_dataloader, lr, n_epochs, alpha=0.5, gamma=0.01, train_loss="DILATE"
     )
+
+metrics_df = pd.DataFrame({
+    'Loss' : ['DILATE', 'MSE'],
+    'MSE': [mse_test_loss_[-1], mse_test_loss[-1]],
+    'DTW': [shape_test_loss_[-1], shape_test_loss[-1]],
+    'TDI': [temporal_test_loss_[-1], temporal_test_loss[-1]]
+})
+
+print(metrics_df)
 
 # Create a directory 'plots' if it doesn't exist
 if not os.path.exists('plots'):
