@@ -81,7 +81,7 @@ def evaluate(model, test_dataloader, alpha=0.01, gamma=0.01, device=None):
             batch_dtw_loss = 0
             batch_tdi_loss = 0
 
-            for i in range(batch_dtw_loss):         
+            for i in range(batch_size):         
                 path, sim = dtw_path(targets[i].flatten().detach().cpu().numpy(), 
                                      outputs[i].flatten().detach().cpu().numpy())   
                 batch_dtw_loss += sim        
